@@ -1,0 +1,7 @@
+{
+    "extends":  ["eslint:recommended", "next/core-web-vitals"],
+    "rules": {
+        "@next/next/no-img-element": "off"
+    },
+    "env": { "browser": true, "node": true, "es6": true },
+}
