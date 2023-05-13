@@ -1,12 +1,40 @@
-import { Button } from 'primereact/button';
-import { Chart } from 'primereact/chart';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { ProductService } from '../demo/service/ProductService';
-import { LayoutContext } from '../layout/context/layoutcontext';
+import { Button } from "primereact/button";
+import { Chart } from "primereact/chart";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { ProductService } from "../demo/service/ProductService";
+import { LayoutContext } from "../layout/context/layoutcontext";
+import io from "socket.io-client";
+import { getInformationHome } from "../demo/features/dataHome";
+import {
+  getTemperature,
+  getHumidity,
+  getFan,
+  getLed,
+  setFan,
+  setLight,
+} from "./api/api";
+
+const socket = io("http://localhost:5000");
 
 const Dashboard = () => {
+  var temperatureData = 0;
+  getTemperature().then((res) => {
+     temperatureData = res.data.value;
+     console.log(temperatureData);
+  });
+  // const humidityData = getHumidity().then((res) => {
+  //   return res.data.value;
+  // });;
+  // const fanData = getFan().then((res) => {
+  //   return res.data.value;
+  // });;
+  // const ledData = getLed().then((res) => {
+  //   return res.data.value;
+  // });;
+  console.log("Temperature", temperatureData);
+
   const [products, setProducts] = useState(null);
   const menu1 = useRef(null);
   const menu2 = useRef(null);
@@ -14,11 +42,16 @@ const Dashboard = () => {
   const { layoutConfig } = useContext(LayoutContext);
   const [lastData, setLastData] = useState([]);
   const [humidData, setHumidData] = useState([]);
+  const [realtimeTemperature, setRealtimeTemperature] = useState(null);
+  const [realtimeHumidity, setRealtimeHumidity] = useState(null);
+  const [realtimeFan, setRealtimeFan] = useState(null);
+  const [realtimeLed, setRealtimeLed] = useState(null);
+  // const processData = () => {};
 
   useEffect(() => {
     const fetchData = async () => {
       const response = await fetch(
-        'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v1/data'
+        "https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v1/data"
       );
       const json = await response.json();
       setLastData(json.slice(0, 7));
@@ -30,7 +63,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       const response = await fetch(
-        'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v2/data'
+        "https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v2/data"
       );
       const json = await response.json();
       setHumidData(json.slice(0, 7));
@@ -39,19 +72,78 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getTemperature();
+      console.log(response.data.value);
+      setRealtimeTemperature(response.data.value);
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getHumidity();
+      console.log(response.data.value);
+      setRealtimeHumidity(response.data.value);
+    };
+
+    fetchData();
+  }, []);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getFan();
+      console.log(response.data.value);
+      // const json = await response.json();
+      // setHumidData(json.slice(0, 7));
+      setRealtimeFan(response.data.value);
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    socket.on("temperatureUpdate", ({ temperature }) => {
+      console.log(temperature);
+      // console.log(`Temperature: ${temperature}°C`);
+      setRealtimeTemperature(temperature);
+    });
+
+    socket.on("humidityUpdate", ({ humidity }) => {
+      console.log(humidity);
+      setRealtimeHumidity(humidity);
+      // console.log(`humidityUpdate: ${humidity}`);
+    });
+
+    socket.on("fanUpdate", ({ fan }) => {
+      console.log(fan);
+      setRealtimeFan(fan);
+      // console.log(`fanUpdate: ${data}`);
+    });
+
+    socket.on("ledUpdate", ({ led }) => {
+      console.log(led);
+      setRealtimeLed(led);
+      // console.log(`ledUpdate: ${data}`);
+    });
+  }, []);
+
   const series = {
     labels: [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
     ],
     datasets: [
       {
-        label: 'humid',
+        label: "humid",
         data: [
           parseFloat(humidData[6]?.value),
           parseFloat(humidData[5]?.value),
@@ -62,12 +154,12 @@ const Dashboard = () => {
           parseFloat(humidData[0]?.value),
         ],
         fill: false,
-        backgroundColor: '#00bb7e',
-        borderColor: '#00bb7e',
+        backgroundColor: "#00bb7e",
+        borderColor: "#00bb7e",
         tension: 0.4,
       },
       {
-        label: 'temp',
+        label: "temp",
         data: [
           parseFloat(lastData[6]?.value),
           parseFloat(lastData[5]?.value),
@@ -78,8 +170,8 @@ const Dashboard = () => {
           parseFloat(lastData[0]?.value),
         ],
         fill: false,
-        backgroundColor: '#2f4860',
-        borderColor: '#2f4860',
+        backgroundColor: "#2f4860",
+        borderColor: "#2f4860",
         tension: 0.4,
       },
     ],
@@ -90,25 +182,25 @@ const Dashboard = () => {
       plugins: {
         legend: {
           labels: {
-            color: '#495057',
+            color: "#495057",
           },
         },
       },
       scales: {
         x: {
           ticks: {
-            color: '#495057',
+            color: "#495057",
           },
           grid: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
         y: {
           ticks: {
-            color: '#495057',
+            color: "#495057",
           },
           grid: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
       },
@@ -122,25 +214,25 @@ const Dashboard = () => {
       plugins: {
         legend: {
           labels: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
       },
       scales: {
         x: {
           ticks: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
           grid: {
-            color: 'rgba(160, 167, 181, .3)',
+            color: "rgba(160, 167, 181, .3)",
           },
         },
         y: {
           ticks: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
           grid: {
-            color: 'rgba(160, 167, 181, .3)',
+            color: "rgba(160, 167, 181, .3)",
           },
         },
       },
@@ -154,7 +246,7 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (layoutConfig.colorScheme === 'light') {
+    if (layoutConfig.colorScheme === "light") {
       applyLightTheme();
     } else {
       applyDarkTheme();
@@ -162,9 +254,9 @@ const Dashboard = () => {
   }, [layoutConfig.colorScheme]);
 
   const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return value.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
   };
 
@@ -177,11 +269,14 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Average Temperature
               </span>
-              <div className="text-900 font-medium text-xl">35&#x2103;</div>
+              <div className="text-900 font-medium text-xl">
+                {realtimeTemperature}&#x2103;
+              </div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-blue-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-shield text-blue-500 text-xl" />
             </div>
           </div>
@@ -196,11 +291,14 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Average Humidity
               </span>
-              <div className="text-900 font-medium text-xl">60</div>
+              <div className="text-900 font-medium text-xl">
+                {realtimeHumidity}
+              </div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-orange-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi  text-orange-500 text-xl" />
             </div>
           </div>
@@ -215,11 +313,12 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Warning temperature in day
               </span>
-              <div className="text-900 font-medium text-xl">12</div>
+              <div className="text-900 font-medium text-xl">{realtimeFan}</div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-cyan-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-inbox text-cyan-500 text-xl" />
             </div>
           </div>
@@ -236,7 +335,8 @@ const Dashboard = () => {
             </div>
             <div
               className="flex align-items-center justify-content-center bg-purple-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-comment text-purple-500 text-xl" />
             </div>
           </div>
@@ -252,25 +352,26 @@ const Dashboard = () => {
             value={products}
             rows={3}
             paginator
-            responsiveLayout="scroll">
+            responsiveLayout="scroll"
+          >
             <Column
               field="time"
               header="Time"
               sortable
-              style={{ width: '35%' }}
+              style={{ width: "35%" }}
             />
             <Column
               field="price"
               header="Temperature"
               sortable
-              style={{ width: '35%' }}
+              style={{ width: "35%" }}
               // body={(data) => formatCurrency(data.price)}
             />
             <Column
               field="price"
               header="Humidity"
               sortable
-              style={{ width: '35%' }}
+              style={{ width: "35%" }}
               // body={(data) => formatCurrency(data.price)}
             />
           </DataTable>
@@ -285,11 +386,7 @@ const Dashboard = () => {
       <div className="col-12 xl:col-6">
         <div className="card">
           <h5>Temperature and Humidity over the week</h5>
-          <Chart
-            type="line"
-            data={series}
-            options={lineOptions}
-          />
+          <Chart type="line" data={series} options={lineOptions} />
           <div>.</div>
           <div>.</div>
         </div>

@@ -9,6 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "axios": "^1.4.0",
         "chart.js": "4.2.1",
         "eslint": "8.38.0",
         "eslint-config-next": "13.3.0",
@@ -18,7 +19,9 @@
         "primereact": "9.2.3",
         "react": "18.2.0",
         "react-apexcharts": "^1.4.0",
-        "react-dom": "18.2.0"
+        "react-dom": "18.2.0",
+        "socket.io": "^4.6.1",
+        "socket.io-client": "^4.6.1"
     },
     "devDependencies": {
         "sass": "^1.58.3"
