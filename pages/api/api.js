@@ -29,14 +29,8 @@ export const getFan = () => API.get("/api/data/lastFan");
 
 export const getLed = () => API.get("/api/data/lastLed");
 
+export const getWarnings = () => API.get("/api/data/todayWarnings");
 
+export const getLast7DaysTemperatures = () => API.get("/api/data/weektemperatures");
+export const getLast7DaysHumidity = () => API.get("/api/data/weekhumids");
 
-// export const get24SolidTemperatures = (date = dayjs().toISOString()) => {
-//   const apiUrl = `api/data/daytemperatures?date=${date}`;
-//   return API.get(apiUrl);
-// };
-
-// export const get24SolidHumidities = (date = dayjs().toISOString()) => {
-//   const apiUrl = `api/data/dayhumidities?date=${date}`;
-//   return API.get(apiUrl);
-// };
