@@ -7,12 +7,16 @@ import { LayoutContext } from '../layout/context/layoutcontext';
 import { Table, Tag } from 'antd';
 
 import {
-  getFan,
+  getTemperature,
   getHumidity,
+  getFan,
+  getLed,
   getLast7DaysHumidity,
   getLast7DaysTemperatures,
-  getTemperature,
+  getLast7DaysTempAndHumids,
+  getWarnings,
   setLight,
+  setFan,
 } from './api/api';
 
 const socket = io('http://localhost:5000');
