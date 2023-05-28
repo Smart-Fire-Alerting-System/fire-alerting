@@ -50,7 +50,8 @@ const Dashboard = () => {
   const [realtimeLed, setRealtimeLed] = useState(null);
   const [weekTemp, setWeekTemp] = useState([]);
   const [dataTable, setDataTable] = useState([]);
-
+  const [warnings, setWarnings] = useState(null);
+  const [last7DaysTempAndHumids, setLast7DaysTempAndHumids] = useState([]);
   // const processData = () => {};
 
   // useEffect(() => {
@@ -157,6 +158,32 @@ const Dashboard = () => {
     }
   };
 
+  // last 7 days temp and humid
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getLast7DaysTempAndHumids();
+      // console.log('responseTempAndHumid: ', response);
+      console.log('responseTempAndHumid data: ', response.data);
+      setLast7DaysTempAndHumids(response.data);
+      // console.log('last7DaysTempAndHumids: ', last7DaysTempAndHumids);
+    };
+
+    fetchData();
+  }, []);
+
+
+
+  // warnings
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getWarnings();
+      console.log("warnings: ", response.data.warning_times);
+      setWarnings(response.data.warning_times);
+    };
+
+    fetchData();
+  }, []);
+
   //   try {
   //     const response = await getLast7DaysHumidity();
   //     console.log('responseHumid: ', response);
@@ -203,9 +230,10 @@ const Dashboard = () => {
   }, []);
   const handleToggleLed = () => {
     setLed(!led);
-    JSON.stringify(led);
-    setLight({ value: led });
-    console.log('led: ' + led);
+    console.log('led: ', led);
+    console.log('led == true ? 1 : 0 ', led == true ? 1 : 0 );
+    const sendData = led == true ? 1 : 0 
+    setLight({ value: sendData.toString() });
   };
 
   const series = {
@@ -214,13 +242,13 @@ const Dashboard = () => {
       {
         label: 'humid',
         data: [
-          parseFloat(humidData[6]?.value),
-          parseFloat(humidData[5]?.value),
-          parseFloat(humidData[4]?.value),
-          parseFloat(humidData[3]?.value),
-          parseFloat(humidData[2]?.value),
-          parseFloat(humidData[1]?.value),
           parseFloat(humidData[0]?.value),
+          parseFloat(humidData[1]?.value),
+          parseFloat(humidData[2]?.value),
+          parseFloat(humidData[3]?.value),
+          parseFloat(humidData[4]?.value),
+          parseFloat(humidData[5]?.value),
+          parseFloat(humidData[6]?.value),
         ],
         fill: false,
         backgroundColor: '#00bb7e',
@@ -230,13 +258,13 @@ const Dashboard = () => {
       {
         label: 'temp',
         data: [
-          parseFloat(weekTemp[6]?.value),
-          parseFloat(weekTemp[5]?.value),
-          parseFloat(weekTemp[4]?.value),
-          parseFloat(weekTemp[3]?.value),
-          parseFloat(weekTemp[2]?.value),
-          parseFloat(weekTemp[1]?.value),
           parseFloat(weekTemp[0]?.value),
+          parseFloat(weekTemp[1]?.value),
+          parseFloat(weekTemp[2]?.value),
+          parseFloat(weekTemp[3]?.value),
+          parseFloat(weekTemp[4]?.value),
+          parseFloat(weekTemp[5]?.value),
+          parseFloat(weekTemp[6]?.value),
         ],
         fill: false,
         backgroundColor: '#2f4860',
@@ -311,7 +339,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    ProductService.getProductsSmall().then((data) => setProducts(data));
+    ProductService.getProductsSmall().then((data) =>{ setProducts(data); console.log("products: ", data);});
   }, []);
 
   useEffect(() => {
@@ -325,66 +353,67 @@ const Dashboard = () => {
   const columnsT = [
     {
       title: 'Date',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'dow',
+      key: 'dow',
       render: (text) => <a>{text}</a>,
     },
     {
       title: 'Temperature',
-      dataIndex: 'age',
-      key: 'age',
+      dataIndex: 'temp',
+      key: 'temp',
     },
     {
       title: 'Humidity',
-      dataIndex: 'address',
-      key: 'address',
+      dataIndex: 'humid',
+      key: 'humid',
     },
-    {
-      title: 'Status',
-      key: 'tags',
-      dataIndex: 'tags',
-      render: (_, { tags }) => (
-        <>
-          {tags.map((tag) => {
-            let color = tag.length > 5 ? 'geekblue' : 'green';
-            if (tag === 'loser') {
-              color = 'volcano';
-            }
-            return (
-              <Tag
-                color={color}
-                key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
-    },
+    // {
+    //   title: 'Status',
+    //   key: 'tags',
+    //   dataIndex: 'tags',
+    //   render: (_, { tags }) => (
+    //     <>
+    //       {tags.map((tag) => {
+    //         let color = tag.length > 5 ? 'geekblue' : 'green';
+    //         if (tag === 'loser') {
+    //           color = 'volcano';
+    //         }
+    //         return (
+    //           <Tag
+    //             color={color}
+    //             key={tag}>
+    //             {tag.toUpperCase()}
+    //           </Tag>
+    //         );
+    //       })}
+    //     </>
+    //   ),
+    // },
   ];
-  const dataT = [
-    {
-      key: '1',
-      name: 'John Brown',
-      age: 32,
-      address: 'N',
-      tags: ['nice', 'developer'],
-    },
-    {
-      key: '2',
-      name: 'Jim Green',
-      age: 42,
-      address: 'L',
-      tags: ['loser'],
-    },
-    {
-      key: '3',
-      name: 'Joe Black',
-      age: 32,
-      address: 'S',
-      tags: ['cool', 'teacher'],
-    },
-  ];
+  const dataT = last7DaysTempAndHumids.reverse();
+  // const dataT = [
+  //   {
+  //     key: '1',
+  //     name: 'John Brown',
+  //     age: 32,
+  //     address: 'N',
+  //     tags: ['nice', 'developer'],
+  //   },
+  //   {
+  //     key: '2',
+  //     name: 'Jim Green',
+  //     age: 42,
+  //     address: 'L',
+  //     tags: ['loser'],
+  //   },
+  //   {
+  //     key: '3',
+  //     name: 'Joe Black',
+  //     age: 32,
+  //     address: 'S',
+  //     tags: ['cool', 'teacher'],
+  //   },
+  // ];
 
   return (
     <div className="grid">
@@ -437,7 +466,7 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Warning temperature in day
               </span>
-              <div className="text-900 font-medium text-xl">{realtimeFan}</div>
+              <div className="text-900 font-medium text-xl">{warnings}</div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-cyan-100 border-round"

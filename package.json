@@ -9,6 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "antd": "^5.5.1",
         "axios": "^1.4.0",
         "chart.js": "4.2.1",
         "eslint": "8.38.0",
