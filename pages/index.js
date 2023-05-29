@@ -1,27 +1,93 @@
-import { Button } from 'primereact/button';
 import { Chart } from 'primereact/chart';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import { ProductService } from '../demo/service/ProductService';
 import { LayoutContext } from '../layout/context/layoutcontext';
 
+import { Table, Tag } from 'antd';
+
+import {
+  getTemperature,
+  getHumidity,
+  getFan,
+  getLed,
+  getLast7DaysHumidity,
+  getLast7DaysTemperatures,
+  getLast7DaysTempAndHumids,
+  getWarnings,
+  setLight,
+  setFan,
+} from './api/api';
+
+const socket = io('http://localhost:5000');
+
 const Dashboard = () => {
+  var temperatureData = 0;
+  getTemperature().then((res) => {
+    temperatureData = res.data.value;
+  });
+  // const humidityData = getHumidity().then((res) => {
+  //   return res.data.value;
+  // });;
+  // const fanData = getFan().then((res) => {
+  //   return res.data.value;
+  // });;
+  // const ledData = getLed().then((res) => {
+  //   return res.data.value;
+  // });;
+
   const [products, setProducts] = useState(null);
-  const menu1 = useRef(null);
-  const menu2 = useRef(null);
+  const [date, setLastDate] = useState([]);
+
   const [lineOptions, setLineOptions] = useState(null);
   const { layoutConfig } = useContext(LayoutContext);
-  const [lastData, setLastData] = useState([]);
+  const [led, setLed] = useState(false);
+
   const [humidData, setHumidData] = useState([]);
+  const [realtimeTemperature, setRealtimeTemperature] = useState(null);
+  const [realtimeHumidity, setRealtimeHumidity] = useState(null);
+  const [realtimeFan, setRealtimeFan] = useState(null);
+  const [realtimeLed, setRealtimeLed] = useState(null);
+  const [weekTemp, setWeekTemp] = useState([]);
+  const [dataTable, setDataTable] = useState([]);
+  const [warnings, setWarnings] = useState(null);
+  const [last7DaysTempAndHumids, setLast7DaysTempAndHumids] = useState([]);
+  // const processData = () => {};
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     const response = await fetch(
+  //       'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v1/data'
+  //     );
+  //     const json = await response.json();
+  //     setLastData(json.slice(0, 7));
+  //   };
+
+  //   fetchData();
+  // }, []);
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     const response = await fetch(
+  //       'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v2/data'
+  //     );
+  //     const json = await response.json();
+  //     setHumidData(json.slice(0, 7));
+  //   };
+
+  //   fetchData();
+  // }, []);
 
   useEffect(() => {
+    formatDataTable();
+    // addHumidData();
+    console.log('responseDataTable: ', dataTable);
+  }, []);
+  useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch(
-        'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v1/data'
-      );
-      const json = await response.json();
-      setLastData(json.slice(0, 7));
+      const response = await getTemperature();
+
+      setRealtimeTemperature(response.data.value);
     };
 
     fetchData();
@@ -29,37 +95,160 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch(
-        'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v2/data'
-      );
-      const json = await response.json();
-      setHumidData(json.slice(0, 7));
+      const response = await getHumidity();
+
+      setRealtimeHumidity(response.data.value);
     };
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getFan();
+      // console.log(response.data.value);
+      // const json = await response.json();
+      // setHumidData(json.slice(0, 7));
+      setRealtimeFan(response.data.value);
+    };
+
+    fetchData();
+  }, []);
+  //date in week
+  useEffect(() => {
+    const fetchDataDay = async () => {
+      const response = await getLast7DaysTemperatures();
+
+      setLastDate(
+        response.data.data.map((item) => {
+          return item.dow;
+        })
+      );
+    };
+
+    fetchDataDay();
+  }, []);
+
+  //temp in week
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getLast7DaysTemperatures();
+
+      setWeekTemp(response.data.data);
+    };
+
+    fetchData();
+  }, []);
+  const formatDataTable = async () => {
+    try {
+      const response = await getLast7DaysTemperatures();
+
+      const newDataTable = response.data.data.map((item, key) => {
+        console.log('item ', item);
+        return {
+          id: key,
+          temp: item.value,
+          date: item.dow,
+          humid: '',
+        };
+      });
+      setDataTable(newDataTable);
+    } catch (error) {
+      console.log('Error fetching data:', error);
+    }
+  };
+
+  // last 7 days temp and humid
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getLast7DaysTempAndHumids();
+      // console.log('responseTempAndHumid: ', response);
+      console.log('responseTempAndHumid data: ', response.data);
+      setLast7DaysTempAndHumids(response.data);
+      // console.log('last7DaysTempAndHumids: ', last7DaysTempAndHumids);
+    };
+
+    fetchData();
+  }, []);
+
+
+
+  // warnings
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getWarnings();
+      console.log("warnings: ", response.data.warning_times);
+      setWarnings(response.data.warning_times);
+    };
+
+    fetchData();
+  }, []);
+
+  //   try {
+  //     const response = await getLast7DaysHumidity();
+  //     console.log('responseHumid: ', response);
+  //     const newAddHumid = response.data.data.map((item, key) => {
+  //       return {
+  //         id: key,
+  //         humid: item.value,
+  //       };
+  //     });
+  //     setDataTable(...dataTable, newAddHumid);
+  //   } catch (error) {
+  //     console.log('Error fetching data:', error);
+  //   }
+  // };
+  //humid in weed
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getLast7DaysHumidity();
+      setHumidData(response.data.data);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    socket.on('temperatureUpdate', ({ temperature }) => {
+      // console.log(`Temperature: ${temperature}°C`);
+      setRealtimeTemperature(temperature);
+    });
+
+    socket.on('humidityUpdate', ({ humidity }) => {
+      setRealtimeHumidity(humidity);
+      // console.log(`humidityUpdate: ${humidity}`);
+    });
+
+    socket.on('fanUpdate', ({ fan }) => {
+      setRealtimeFan(fan);
+      // console.log(`fanUpdate: ${data}`);
+    });
+
+    socket.on('ledUpdate', ({ led }) => {
+      setRealtimeLed(led);
+      // console.log(`ledUpdate: ${data}`);
+    });
+  }, []);
+  const handleToggleLed = () => {
+    setLed(!led);
+    console.log('led: ', led);
+    console.log('led == true ? 1 : 0 ', led == true ? 1 : 0 );
+    const sendData = led == true ? 1 : 0 
+    setLight({ value: sendData.toString() });
+  };
 
   const series = {
-    labels: [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ],
+    labels: date,
     datasets: [
       {
         label: 'humid',
         data: [
-          parseFloat(humidData[6]?.value),
-          parseFloat(humidData[5]?.value),
-          parseFloat(humidData[4]?.value),
-          parseFloat(humidData[3]?.value),
-          parseFloat(humidData[2]?.value),
-          parseFloat(humidData[1]?.value),
           parseFloat(humidData[0]?.value),
+          parseFloat(humidData[1]?.value),
+          parseFloat(humidData[2]?.value),
+          parseFloat(humidData[3]?.value),
+          parseFloat(humidData[4]?.value),
+          parseFloat(humidData[5]?.value),
+          parseFloat(humidData[6]?.value),
         ],
         fill: false,
         backgroundColor: '#00bb7e',
@@ -69,13 +258,13 @@ const Dashboard = () => {
       {
         label: 'temp',
         data: [
-          parseFloat(lastData[6]?.value),
-          parseFloat(lastData[5]?.value),
-          parseFloat(lastData[4]?.value),
-          parseFloat(lastData[3]?.value),
-          parseFloat(lastData[2]?.value),
-          parseFloat(lastData[1]?.value),
-          parseFloat(lastData[0]?.value),
+          parseFloat(weekTemp[0]?.value),
+          parseFloat(weekTemp[1]?.value),
+          parseFloat(weekTemp[2]?.value),
+          parseFloat(weekTemp[3]?.value),
+          parseFloat(weekTemp[4]?.value),
+          parseFloat(weekTemp[5]?.value),
+          parseFloat(weekTemp[6]?.value),
         ],
         fill: false,
         backgroundColor: '#2f4860',
@@ -150,7 +339,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    ProductService.getProductsSmall().then((data) => setProducts(data));
+    ProductService.getProductsSmall().then((data) =>{ setProducts(data); console.log("products: ", data);});
   }, []);
 
   useEffect(() => {
@@ -160,13 +349,71 @@ const Dashboard = () => {
       applyDarkTheme();
     }
   }, [layoutConfig.colorScheme]);
-
-  const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    });
-  };
+  console.log('series:', series);
+  const columnsT = [
+    {
+      title: 'Date',
+      dataIndex: 'dow',
+      key: 'dow',
+      render: (text) => <a>{text}</a>,
+    },
+    {
+      title: 'Temperature',
+      dataIndex: 'temp',
+      key: 'temp',
+    },
+    {
+      title: 'Humidity',
+      dataIndex: 'humid',
+      key: 'humid',
+    },
+    // {
+    //   title: 'Status',
+    //   key: 'tags',
+    //   dataIndex: 'tags',
+    //   render: (_, { tags }) => (
+    //     <>
+    //       {tags.map((tag) => {
+    //         let color = tag.length > 5 ? 'geekblue' : 'green';
+    //         if (tag === 'loser') {
+    //           color = 'volcano';
+    //         }
+    //         return (
+    //           <Tag
+    //             color={color}
+    //             key={tag}>
+    //             {tag.toUpperCase()}
+    //           </Tag>
+    //         );
+    //       })}
+    //     </>
+    //   ),
+    // },
+  ];
+  const dataT = last7DaysTempAndHumids.reverse();
+  // const dataT = [
+  //   {
+  //     key: '1',
+  //     name: 'John Brown',
+  //     age: 32,
+  //     address: 'N',
+  //     tags: ['nice', 'developer'],
+  //   },
+  //   {
+  //     key: '2',
+  //     name: 'Jim Green',
+  //     age: 42,
+  //     address: 'L',
+  //     tags: ['loser'],
+  //   },
+  //   {
+  //     key: '3',
+  //     name: 'Joe Black',
+  //     age: 32,
+  //     address: 'S',
+  //     tags: ['cool', 'teacher'],
+  //   },
+  // ];
 
   return (
     <div className="grid">
@@ -177,7 +424,9 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Average Temperature
               </span>
-              <div className="text-900 font-medium text-xl">35&#x2103;</div>
+              <div className="text-900 font-medium text-xl">
+                {realtimeTemperature}&#x2103;
+              </div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-blue-100 border-round"
@@ -196,7 +445,9 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Average Humidity
               </span>
-              <div className="text-900 font-medium text-xl">60</div>
+              <div className="text-900 font-medium text-xl">
+                {realtimeHumidity}
+              </div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-orange-100 border-round"
@@ -215,7 +466,7 @@ const Dashboard = () => {
               <span className="block text-500 font-medium mb-3">
                 Warning temperature in day
               </span>
-              <div className="text-900 font-medium text-xl">12</div>
+              <div className="text-900 font-medium text-xl">{warnings}</div>
             </div>
             <div
               className="flex align-items-center justify-content-center bg-cyan-100 border-round"
@@ -247,37 +498,16 @@ const Dashboard = () => {
 
       <div className="col-12 xl:col-6">
         <div className="card">
-          <h5>Temperature Update</h5>
-          <DataTable
-            value={products}
-            rows={3}
-            paginator
-            responsiveLayout="scroll">
-            <Column
-              field="time"
-              header="Time"
-              sortable
-              style={{ width: '35%' }}
-            />
-            <Column
-              field="price"
-              header="Temperature"
-              sortable
-              style={{ width: '35%' }}
-              // body={(data) => formatCurrency(data.price)}
-            />
-            <Column
-              field="price"
-              header="Humidity"
-              sortable
-              style={{ width: '35%' }}
-              // body={(data) => formatCurrency(data.price)}
-            />
-          </DataTable>
+          <Table
+            columns={columnsT}
+            dataSource={dataT}
+          />
         </div>
         <div className="card">
           <div className="flex justify-content-between align-items-center mb-5">
             <h5>Control Devices</h5>
+            <button onClick={handleToggleLed}>Led</button>
+            <button>Fan</button>
           </div>
         </div>
       </div>
@@ -290,7 +520,6 @@ const Dashboard = () => {
             data={series}
             options={lineOptions}
           />
-          <div>.</div>
           <div>.</div>
         </div>
       </div>
