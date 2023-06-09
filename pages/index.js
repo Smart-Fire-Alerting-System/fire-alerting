@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { ProductService } from '../demo/service/ProductService';
 import { LayoutContext } from '../layout/context/layoutcontext';
+import { InputSwitch } from 'primereact/inputswitch';
 
 import { Table, Tag } from 'antd';
 
@@ -207,15 +208,20 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  // useEffect(() => {
+  //   handleToggleLedToServer();
+  //   console.log("realtimeLed: ", realtimeLed);
+  // },[]);
+
   useEffect(() => {
     socket.on('temperatureUpdate', ({ temperature }) => {
-      // console.log(`Temperature: ${temperature}°C`);
+      console.log(`Temperature: ${temperature}°C`);
       setRealtimeTemperature(temperature);
     });
 
     socket.on('humidityUpdate', ({ humidity }) => {
       setRealtimeHumidity(humidity);
-      // console.log(`humidityUpdate: ${humidity}`);
+      console.log(`humidityUpdate: ${humidity}`);
     });
 
     socket.on('fanUpdate', ({ fan }) => {
@@ -225,16 +231,33 @@ const Dashboard = () => {
 
     socket.on('ledUpdate', ({ led }) => {
       setRealtimeLed(led);
-      // console.log(`ledUpdate: ${data}`);
+      console.log(`ledUpdate: ${led}`);
     });
   }, []);
-  const handleToggleLed = () => {
-    setLed(!led);
-    console.log('led: ', led);
-    console.log('led == true ? 1 : 0 ', led == true ? 1 : 0 );
-    const sendData = led == true ? 1 : 0 
+
+
+
+  const handleToggleLedToServer  = () => {
+    
+  }
+
+  const handleToggleLed = (value) => {
+    // setLed(!led);
+    console.log('led truoc: ', realtimeLed);
+
+    console.log('value', value == true ? 1 : 0);
+
+    setRealtimeLed(value == true ? 1 : 0);
+
+    console.log("led sau", realtimeLed);
+    // handleToggleLedToServer();
+    const sendData = realtimeLed == true ? 0 : 1;
+    console.log("sendData: ", { value: sendData.toString() });
     setLight({ value: sendData.toString() });
+    
   };
+
+  // console.log("led sau ngoai", realtimeLed);
 
   const series = {
     labels: date,
@@ -339,7 +362,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    ProductService.getProductsSmall().then((data) =>{ setProducts(data); console.log("products: ", data);});
+    ProductService.getProductsSmall().then((data) =>{ setProducts(data);});
   }, []);
 
   useEffect(() => {
@@ -349,7 +372,7 @@ const Dashboard = () => {
       applyDarkTheme();
     }
   }, [layoutConfig.colorScheme]);
-  console.log('series:', series);
+  // console.log('series:', series);
   const columnsT = [
     {
       title: 'Date',
@@ -507,6 +530,7 @@ const Dashboard = () => {
           <div className="flex justify-content-between align-items-center mb-5">
             <h5>Control Devices</h5>
             <button onClick={handleToggleLed}>Led</button>
+            <InputSwitch checked={realtimeLed == 1 ? true : false} onChange={(e) => handleToggleLed(e.value)} />
             <button>Fan</button>
           </div>
         </div>
