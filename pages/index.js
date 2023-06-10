@@ -1,11 +1,13 @@
-import { Chart } from 'primereact/chart';
-import React, { useContext, useEffect, useState } from 'react';
-import io from 'socket.io-client';
-import { ProductService } from '../demo/service/ProductService';
-import { LayoutContext } from '../layout/context/layoutcontext';
-import { InputSwitch } from 'primereact/inputswitch';
+import { Chart } from "primereact/chart";
+import React, { useContext, useEffect, useState } from "react";
+import io from "socket.io-client";
+import { ProductService } from "../demo/service/ProductService";
+import { LayoutContext } from "../layout/context/layoutcontext";
+import { InputSwitch } from "primereact/inputswitch";
+import { Slider } from "primereact/slider";
+import { InputText } from "primereact/inputtext";
 
-import { Table, Tag } from 'antd';
+import { Table, Tag } from "antd";
 
 import {
   getTemperature,
@@ -18,9 +20,9 @@ import {
   getWarnings,
   setLight,
   setFan,
-} from './api/api';
+} from "./api/api";
 
-const socket = io('http://localhost:5000');
+const socket = io("http://localhost:5000");
 
 const Dashboard = () => {
   var temperatureData = 0;
@@ -42,7 +44,6 @@ const Dashboard = () => {
 
   const [lineOptions, setLineOptions] = useState(null);
   const { layoutConfig } = useContext(LayoutContext);
-  const [led, setLed] = useState(false);
 
   const [humidData, setHumidData] = useState([]);
   const [realtimeTemperature, setRealtimeTemperature] = useState(null);
@@ -53,36 +54,9 @@ const Dashboard = () => {
   const [dataTable, setDataTable] = useState([]);
   const [warnings, setWarnings] = useState(null);
   const [last7DaysTempAndHumids, setLast7DaysTempAndHumids] = useState([]);
-  // const processData = () => {};
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const response = await fetch(
-  //       'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v1/data'
-  //     );
-  //     const json = await response.json();
-  //     setLastData(json.slice(0, 7));
-  //   };
-
-  //   fetchData();
-  // }, []);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const response = await fetch(
-  //       'https://io.adafruit.com/api/v2/HCMUT_IOT/feeds/v2/data'
-  //     );
-  //     const json = await response.json();
-  //     setHumidData(json.slice(0, 7));
-  //   };
-
-  //   fetchData();
-  // }, []);
-
+  
   useEffect(() => {
     formatDataTable();
-    // addHumidData();
-    console.log('responseDataTable: ', dataTable);
   }, []);
   useEffect(() => {
     const fetchData = async () => {
@@ -107,10 +81,16 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       const response = await getFan();
-      // console.log(response.data.value);
-      // const json = await response.json();
-      // setHumidData(json.slice(0, 7));
       setRealtimeFan(response.data.value);
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await getLed();
+      setRealtimeLed(response.data.value);
     };
 
     fetchData();
@@ -145,17 +125,17 @@ const Dashboard = () => {
       const response = await getLast7DaysTemperatures();
 
       const newDataTable = response.data.data.map((item, key) => {
-        console.log('item ', item);
+        console.log("item ", item);
         return {
           id: key,
           temp: item.value,
           date: item.dow,
-          humid: '',
+          humid: "",
         };
       });
       setDataTable(newDataTable);
     } catch (error) {
-      console.log('Error fetching data:', error);
+      console.log("Error fetching data:", error);
     }
   };
 
@@ -164,15 +144,13 @@ const Dashboard = () => {
     const fetchData = async () => {
       const response = await getLast7DaysTempAndHumids();
       // console.log('responseTempAndHumid: ', response);
-      console.log('responseTempAndHumid data: ', response.data);
+      console.log("responseTempAndHumid data: ", response.data);
       setLast7DaysTempAndHumids(response.data);
       // console.log('last7DaysTempAndHumids: ', last7DaysTempAndHumids);
     };
 
     fetchData();
   }, []);
-
-
 
   // warnings
   useEffect(() => {
@@ -185,20 +163,6 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  //   try {
-  //     const response = await getLast7DaysHumidity();
-  //     console.log('responseHumid: ', response);
-  //     const newAddHumid = response.data.data.map((item, key) => {
-  //       return {
-  //         id: key,
-  //         humid: item.value,
-  //       };
-  //     });
-  //     setDataTable(...dataTable, newAddHumid);
-  //   } catch (error) {
-  //     console.log('Error fetching data:', error);
-  //   }
-  // };
   //humid in weed
   useEffect(() => {
     const fetchData = async () => {
@@ -208,62 +172,43 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   handleToggleLedToServer();
-  //   console.log("realtimeLed: ", realtimeLed);
-  // },[]);
-
   useEffect(() => {
-    socket.on('temperatureUpdate', ({ temperature }) => {
+    socket.on("temperatureUpdate", ({ temperature }) => {
       console.log(`Temperature: ${temperature}°C`);
       setRealtimeTemperature(temperature);
     });
 
-    socket.on('humidityUpdate', ({ humidity }) => {
+    socket.on("humidityUpdate", ({ humidity }) => {
       setRealtimeHumidity(humidity);
       console.log(`humidityUpdate: ${humidity}`);
     });
 
-    socket.on('fanUpdate', ({ fan }) => {
+    socket.on("fanUpdate", ({ fan }) => {
       setRealtimeFan(fan);
-      // console.log(`fanUpdate: ${data}`);
+      console.log(`fanUpdate: ${data}`);
     });
 
-    socket.on('ledUpdate', ({ led }) => {
+    socket.on("ledUpdate", ({ led }) => {
       setRealtimeLed(led);
       console.log(`ledUpdate: ${led}`);
     });
   }, []);
 
-
-
-  const handleToggleLedToServer  = () => {
-    
-  }
-
-  const handleToggleLed = (value) => {
-    // setLed(!led);
-    console.log('led truoc: ', realtimeLed);
-
-    console.log('value', value == true ? 1 : 0);
-
-    setRealtimeLed(value == true ? 1 : 0);
-
-    console.log("led sau", realtimeLed);
-    // handleToggleLedToServer();
-    const sendData = realtimeLed == true ? 0 : 1;
-    console.log("sendData: ", { value: sendData.toString() });
-    setLight({ value: sendData.toString() });
-    
+ 
+  const handleToggleFan = (value, e) => {
+    setFan({ value: realtimeFan.toString() });
   };
 
-  // console.log("led sau ngoai", realtimeLed);
+  const handleToggleLed = (value) => {
+    setRealtimeLed(value == true ? 1 : 0);
+    setLight({ value: sendData.toString() });
+  };
 
   const series = {
     labels: date,
     datasets: [
       {
-        label: 'humid',
+        label: "humid",
         data: [
           parseFloat(humidData[0]?.value),
           parseFloat(humidData[1]?.value),
@@ -274,12 +219,12 @@ const Dashboard = () => {
           parseFloat(humidData[6]?.value),
         ],
         fill: false,
-        backgroundColor: '#00bb7e',
-        borderColor: '#00bb7e',
+        backgroundColor: "#00bb7e",
+        borderColor: "#00bb7e",
         tension: 0.4,
       },
       {
-        label: 'temp',
+        label: "temp",
         data: [
           parseFloat(weekTemp[0]?.value),
           parseFloat(weekTemp[1]?.value),
@@ -290,8 +235,8 @@ const Dashboard = () => {
           parseFloat(weekTemp[6]?.value),
         ],
         fill: false,
-        backgroundColor: '#2f4860',
-        borderColor: '#2f4860',
+        backgroundColor: "#2f4860",
+        borderColor: "#2f4860",
         tension: 0.4,
       },
     ],
@@ -302,25 +247,25 @@ const Dashboard = () => {
       plugins: {
         legend: {
           labels: {
-            color: '#495057',
+            color: "#495057",
           },
         },
       },
       scales: {
         x: {
           ticks: {
-            color: '#495057',
+            color: "#495057",
           },
           grid: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
         y: {
           ticks: {
-            color: '#495057',
+            color: "#495057",
           },
           grid: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
       },
@@ -334,25 +279,25 @@ const Dashboard = () => {
       plugins: {
         legend: {
           labels: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
         },
       },
       scales: {
         x: {
           ticks: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
           grid: {
-            color: 'rgba(160, 167, 181, .3)',
+            color: "rgba(160, 167, 181, .3)",
           },
         },
         y: {
           ticks: {
-            color: '#ebedef',
+            color: "#ebedef",
           },
           grid: {
-            color: 'rgba(160, 167, 181, .3)',
+            color: "rgba(160, 167, 181, .3)",
           },
         },
       },
@@ -362,11 +307,13 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    ProductService.getProductsSmall().then((data) =>{ setProducts(data);});
+    ProductService.getProductsSmall().then((data) => {
+      setProducts(data);
+    });
   }, []);
 
   useEffect(() => {
-    if (layoutConfig.colorScheme === 'light') {
+    if (layoutConfig.colorScheme === "light") {
       applyLightTheme();
     } else {
       applyDarkTheme();
@@ -375,20 +322,20 @@ const Dashboard = () => {
   // console.log('series:', series);
   const columnsT = [
     {
-      title: 'Date',
-      dataIndex: 'dow',
-      key: 'dow',
+      title: "Date",
+      dataIndex: "dow",
+      key: "dow",
       render: (text) => <a>{text}</a>,
     },
     {
-      title: 'Temperature',
-      dataIndex: 'temp',
-      key: 'temp',
+      title: "Temperature",
+      dataIndex: "temp",
+      key: "temp",
     },
     {
-      title: 'Humidity',
-      dataIndex: 'humid',
-      key: 'humid',
+      title: "Humidity",
+      dataIndex: "humid",
+      key: "humid",
     },
     // {
     //   title: 'Status',
@@ -453,7 +400,8 @@ const Dashboard = () => {
             </div>
             <div
               className="flex align-items-center justify-content-center bg-blue-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-shield text-blue-500 text-xl" />
             </div>
           </div>
@@ -474,7 +422,8 @@ const Dashboard = () => {
             </div>
             <div
               className="flex align-items-center justify-content-center bg-orange-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi  text-orange-500 text-xl" />
             </div>
           </div>
@@ -493,7 +442,8 @@ const Dashboard = () => {
             </div>
             <div
               className="flex align-items-center justify-content-center bg-cyan-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-inbox text-cyan-500 text-xl" />
             </div>
           </div>
@@ -510,7 +460,8 @@ const Dashboard = () => {
             </div>
             <div
               className="flex align-items-center justify-content-center bg-purple-100 border-round"
-              style={{ width: '2.5rem', height: '2.5rem' }}>
+              style={{ width: "2.5rem", height: "2.5rem" }}
+            >
               <i className="pi pi-comment text-purple-500 text-xl" />
             </div>
           </div>
@@ -521,17 +472,30 @@ const Dashboard = () => {
 
       <div className="col-12 xl:col-6">
         <div className="card">
-          <Table
-            columns={columnsT}
-            dataSource={dataT}
-          />
+          <Table columns={columnsT} dataSource={dataT} />
         </div>
         <div className="card">
           <div className="flex justify-content-between align-items-center mb-5">
             <h5>Control Devices</h5>
-            <button onClick={handleToggleLed}>Led</button>
-            <InputSwitch checked={realtimeLed == 1 ? true : false} onChange={(e) => handleToggleLed(e.value)} />
-            <button>Fan</button>
+          </div>
+          <div className="col-5">
+          Fan Control    :{" "}
+            <InputText
+              value={realtimeFan}
+              onChange={(e) => {handleToggleFan(parseInt(e.target.value), 10); console.log(e);}}
+            />
+            <Slider
+              value={realtimeFan}
+              onChange={(e) => {setRealtimeFan(e.value); console.log("On CHange", e.value);}}
+              onMouseUp={(e) => {console.log("On Mouse Up: ", e); handleToggleFan(e.value); }}
+            />
+          </div>
+          <div className="col-5">
+            LED Control    :{" "}
+            <InputSwitch
+              checked={realtimeLed == 1 ? true : false}
+              onChange={(e) => handleToggleLed(e.value)}
+            />
           </div>
         </div>
       </div>
@@ -539,11 +503,7 @@ const Dashboard = () => {
       <div className="col-12 xl:col-6">
         <div className="card">
           <h5>Temperature and Humidity over the week</h5>
-          <Chart
-            type="line"
-            data={series}
-            options={lineOptions}
-          />
+          <Chart type="line" data={series} options={lineOptions} />
           <div>.</div>
         </div>
       </div>
