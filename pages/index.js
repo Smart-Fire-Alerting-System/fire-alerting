@@ -176,6 +176,11 @@ const Dashboard = () => {
     socket.on("temperatureUpdate", ({ temperature }) => {
       console.log(`Temperature: ${temperature}°C`);
       setRealtimeTemperature(temperature);
+      if (temperature >= 45) {
+        setLight({ value: "1" });
+        setFan({ value: "100" })
+        alert("Temperature is too high");
+      }
     });
 
     socket.on("humidityUpdate", ({ humidity }) => {
@@ -185,7 +190,7 @@ const Dashboard = () => {
 
     socket.on("fanUpdate", ({ fan }) => {
       setRealtimeFan(fan);
-      console.log(`fanUpdate: ${data}`);
+      console.log(`fanUpdate: ${fan}`);
     });
 
     socket.on("ledUpdate", ({ led }) => {
@@ -201,6 +206,8 @@ const Dashboard = () => {
 
   const handleToggleLed = (value) => {
     setRealtimeLed(value == true ? 1 : 0);
+    console.log("led: ", value);
+    const sendData = value == true ? 1 : 0;
     setLight({ value: sendData.toString() });
   };
 
